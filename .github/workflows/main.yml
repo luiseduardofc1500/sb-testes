@@ -11,6 +11,7 @@ on:
       - closed
     branches:
       - 'staging'
+      - 'production'
 
 jobs:
   back_build:
@@ -76,7 +77,7 @@ jobs:
   tag_build_rc:
     runs-on: ubuntu-latest
     needs: [back_build, front_build]
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'staging'
     outputs:
       new_tag: ${{ steps.set_tag.outputs.TAG_NAME }}
     steps:
@@ -115,7 +116,7 @@ jobs:
   package_release_rc:
     runs-on: ubuntu-latest
     needs: tag_build_rc
-    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'staging'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -176,10 +177,9 @@ jobs:
           path: ${{ needs.tag_build_rc.outputs.new_tag }}.zip
 
   tag_release_production:
-    name: Create Release Tag
     runs-on: ubuntu-latest
     needs: [back_build, front_build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/production'
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'production'
     outputs:
       new_tag: ${{ steps.set_tag.outputs.TAG_NAME }}
     steps:
@@ -223,7 +223,7 @@ jobs:
     name: Package Release Artifact
     runs-on: ubuntu-latest
     needs: tag_release_production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/production'
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'production'
     steps:
       - uses: actions/checkout@v4
         with:
