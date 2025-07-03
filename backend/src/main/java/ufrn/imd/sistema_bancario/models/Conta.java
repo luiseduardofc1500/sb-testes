@@ -11,6 +11,7 @@ import ufrn.imd.sistema_bancario.services.exceptions.ValorInvalidoException;
 public class Conta {
     private String numero;
     private double saldo;
+    //private String idoEUmBobao;
 
     public Conta(String numero) {
         this.numero = numero;
