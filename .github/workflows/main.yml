@@ -118,22 +118,17 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set tag name
         run: echo "TAG_NAME=${{ needs.tag_build_rc.outputs.new_tag }}" >> $GITHUB_ENV
 
-      - name: Build backend JAR (again)
-        run: |
-          cd backend
-          mvn -B clean package -DskipTests
-          
-      - name: Create ZIP package with tag name
+      - name: Create ZIP package of repository with tag name
         env:
           TAG_NAME: ${{ needs.tag_build_rc.outputs.new_tag }}
         run: |
-          mkdir release
-          cp backend/target/*.jar release/
-          zip -r "$TAG_NAME.zip" release
+          zip -r "$TAG_NAME.zip" . -x '*.git*' '*.github/workflows/main.yml'
 
       - name: Upload Release ZIP
         uses: actions/upload-artifact@v4
