@@ -35,14 +35,14 @@ jobs:
       env:
         JAVA_TOOL_OPTIONS: "-Duser.language=pt -Duser.country=BR -Dfile.encoding=UTF-8"
 
-    - name: Run Checkstyle and Generate HTML Report
-      run: cd backend && mvn site
+    - name: Run Checkstyle
+      run: cd backend && mvn checkstyle:checkstyle
 
-    - name: Upload Checkstyle HTML Report
+    - name: Upload Checkstyle Report
       uses: actions/upload-artifact@v4
       with:
         name: checkstyle-report
-        path: backend/target/site/checkstyle.html
+        path: backend/target/checkstyle-result.xml
 
   front_build:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
