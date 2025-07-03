@@ -35,14 +35,15 @@ jobs:
       env:
         JAVA_TOOL_OPTIONS: "-Duser.language=pt -Duser.country=BR -Dfile.encoding=UTF-8"
 
-    - name: Run Checkstyle
-      run: cd backend && mvn checkstyle:checkstyle
-
-    - name: Upload Checkstyle Report
+    - name: Run PMD
+      run: cd backend && mvn pmd:check
+      
+    - name: Upload PMD Report (HTML)
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: checkstyle-report
-        path: backend/target/checkstyle-result.xml
+        name: pmd-report-html
+        path: backend/target/pmd/pmd.html
 
   front_build:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
