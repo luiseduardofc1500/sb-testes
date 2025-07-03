@@ -13,9 +13,8 @@ on:
       - 'staging'
 
 jobs:
-  # JOB DO BACKEND (COMO VOCÊ MANDOU)
   back_build:
-    if: github.event_name == 'push' || (github.event.name == 'pull_request' && github.event.pull_request.merged == true)
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -27,29 +26,27 @@ jobs:
         cache: maven
     - name: Resolve dependencies
       run: cd backend && mvn dependency:go-offline
+
     - name: Build with Maven
       run: cd backend && mvn -B clean package -DskipTests
+
     - name: Run tests
       run: cd backend && mvn -B test
-    - name: Run PMD Analysis
+      env:
+        JAVA_TOOL_OPTIONS: "-Duser.language=pt -Duser.country=BR -Dfile.encoding=UTF-8"
+
+    - name: Run PMD Analysis and Generate Report
       run: cd backend && mvn pmd:pmd pmd:check || true
-    - name: Upload PMD Report
+
+    - name: Upload PMD Report (HTML)
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: pmd-report-html
         path: backend/target/site/pmd.html
-    
-    # ADICIONADO: Empacota o resultado do backend para o job final usar
-    - name: Upload backend build
-      uses: actions/upload-artifact@v4
-      with:
-        name: backend-artifact
-        path: backend/target/*.jar
 
-  # JOB DO FRONTEND (COMO VOCÊ MANDOU)
   front_build:
-    if: github.event_name == 'push' || (github.event.name == 'pull_request' && github.event.pull_request.merged == true)
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,15 +60,7 @@ jobs:
         run: npm ci --prefix frontend
       - name: Build Frontend
         run: npm run build --prefix frontend
-      
-      # ADICIONADO: Empacota o resultado do frontend para o job final usar
-      - name: Upload frontend build
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-artifact
-          path: frontend/dist # Ou a pasta de build do seu projeto front
 
-  # JOB DE TAG PARA MAIN (COMO VOCÊ MANDOU)
   tag_build_main:
     runs-on: ubuntu-latest
     needs: [back_build, front_build]
@@ -84,13 +73,9 @@ jobs:
           git tag $TAG
           git push origin $TAG
 
-  # JOB FINAL: CRIA A TAG RC E GERA O ZIP
-  create_rc_package:
+  tag_build_rc:
     runs-on: ubuntu-latest
-    needs: [back_build, front_build] # Executa depois dos builds
-    permissions:
-      contents: write
-      actions: read # Precisa ler os artefatos dos jobs anteriores
+    needs: [back_build, front_build]
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
     steps:
       - uses: actions/checkout@v4
@@ -100,43 +85,25 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-
-      # 1. Cria a tag (exatamente como você fez)
       - name: Create and Push new RC tag
-        id: create_tag
         run: |
+          # Busca a tag rc-X.Y mais recente
           LATEST_TAG=$(git tag --list 'rc-*' --sort=-v:refname | head -n 1)
+
           if [ -z "$LATEST_TAG" ]; then
+            # Se nenhuma tag rc- existir, começa com rc-1.0
             NEW_TAG="rc-1.0"
           else
+            # Extrai os números de versão X e Y
             VERSION=$(echo $LATEST_TAG | sed 's/rc-//')
             MAJOR=$(echo $VERSION | cut -d. -f1)
             MINOR=$(echo $VERSION | cut -d. -f2)
+
+            # Incrementa a versão Y
             NEW_MINOR=$((MINOR + 1))
             NEW_TAG="rc-${MAJOR}.${NEW_MINOR}"
           fi
+
           echo "Criando nova tag: $NEW_TAG"
           git tag $NEW_TAG
           git push origin $NEW_TAG
-          echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
-
-      # 2. Pega os builds que os outros jobs fizeram
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: build
-
-      # 3. Junta tudo e faz o ZIP
-      - name: Create system package (zip)
-        run: |
-          mkdir -p release-content/frontend
-          mv build/backend-artifact/* release-content/
-          mv build/frontend-artifact/* release-content/frontend/
-          zip -r ${{ steps.create_tag.outputs.tag_name }}.zip release-content
-
-      # 4. Deixa o ZIP disponível para download
-      - name: Upload final package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.create_tag.outputs.tag_name }}
-          path: ${{ steps.create_tag.outputs.tag_name }}.zip
