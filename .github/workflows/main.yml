@@ -193,34 +193,24 @@ jobs:
       - name: Create and Push new Release tag
         id: set_tag
         run: |
-          # 1. Encontra a tag RC mais recente para obter a versão Major
+          # 1. Encontra a tag RC mais recente para obter a versão X e Y
           LATEST_RC_TAG=$(git tag --list 'rc-*' --sort=-v:refname | head -n 1)
           if [ -z "$LATEST_RC_TAG" ]; then
             echo "::error::Nenhuma tag 'rc-*' encontrada. Impossível criar a tag de release."
             exit 1
           fi
-          MAJOR_VERSION=$(echo $LATEST_RC_TAG | sed -n 's/^rc-\([0-9]\)\../\1/p')
+          VERSION=$(echo $LATEST_RC_TAG | sed 's/rc-//')
+          X=$(echo $VERSION | cut -d. -f1)
+          Y=$(echo $VERSION | cut -d. -f2)
 
-          # 2. Encontra a última tag de release para essa versão Major para incrementar o Minor
-          LATEST_REL_TAG=$(git tag --list "rel-${MAJOR_VERSION}.*" --sort=-v:refname | head -n 1)
+          NEW_TAG="rel-${X}.${Y}"
 
-          if [ -z "$LATEST_REL_TAG" ]; then
-            # Se não existe release para essa Major, começa com .0
-            NEW_TAG="rel-${MAJOR_VERSION}.0"
-          else
-            # Incrementa a versão Minor
-            MINOR_VERSION=$(echo $LATEST_REL_TAG | cut -d. -f2)
-            NEW_MINOR=$((MINOR_VERSION + 1))
-            NEW_TAG="rel-${MAJOR_VERSION}.${NEW_MINOR}"
-          fi
-          
           echo "Nova tag de release: $NEW_TAG"
           echo "TAG_NAME=$NEW_TAG" >> $GITHUB_OUTPUT
           git tag "$NEW_TAG"
           git push origin "$NEW_TAG"
 
   package_release_production:
-    name: Package Release Artifact
     runs-on: ubuntu-latest
     needs: tag_release_production
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'production'
