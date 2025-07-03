@@ -124,11 +124,26 @@ jobs:
       - name: Set tag name
         run: echo "TAG_NAME=${{ needs.tag_build_rc.outputs.new_tag }}" >> $GITHUB_ENV
 
-      - name: Create ZIP package of repository with tag name
+      - name: Prepare release folder with build artifacts
+        run: |
+          mkdir -p release/backend
+          mkdir -p release/frontend
+          cp backend/target/*.jar release/backend/
+          # Ajuste o caminho abaixo conforme o output do build do frontend
+          if [ -d frontend/out ]; then
+            cp -r frontend/out release/frontend/
+          elif [ -d frontend/.next ]; then
+            cp -r frontend/.next release/frontend/
+          elif [ -d frontend/dist ]; then
+            cp -r frontend/dist release/frontend/
+          fi
+
+      - name: Create ZIP package with tag name
         env:
           TAG_NAME: ${{ needs.tag_build_rc.outputs.new_tag }}
         run: |
-          zip -r "$TAG_NAME.zip" . -x '*.git*' '*.github/workflows/main.yml'
+          cd release
+          zip -r "../$TAG_NAME.zip" .
 
       - name: Upload Release ZIP
         uses: actions/upload-artifact@v4
