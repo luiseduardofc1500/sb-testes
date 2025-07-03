@@ -78,11 +78,11 @@ jobs:
     needs: [back_build, front_build]
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
     outputs:
-      new_tag: ${{ steps.tag_step.outputs.new_tag }}
+      new_tag: ${{ steps.set_tag.outputs.TAG_NAME }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Configure Git
         run: |
@@ -90,7 +90,7 @@ jobs:
           git config user.email "actions@github.com"
 
       - name: Create and Push new RC tag
-        id: tag_step
+        id: set_tag
         run: |
           # Busca a tag rc-X.Y mais recente
           LATEST_TAG=$(git tag --list 'rc-*' --sort=-v:refname | head -n 1)
@@ -108,10 +108,9 @@ jobs:
             NEW_MINOR=$((MINOR + 1))
             NEW_TAG="rc-${MAJOR}.${NEW_MINOR}"
           fi
-
-          echo "Criando nova tag: $NEW_TAG"
-          git tag $NEW_TAG
-          git push origin $NEW_TAG
+          echo "TAG_NAME=$NEW_TAG" >> $GITHUB_OUTPUT
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
 
   package_release_rc:
     runs-on: ubuntu-latest
@@ -119,22 +118,18 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Get RC Tag Name
+      - name: Set tag name
         run: echo "TAG_NAME=${{ needs.tag_build_rc.outputs.new_tag }}" >> $GITHUB_ENV
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
+      - name: Build backend JAR (again)
+        run: |
+          cd backend
+          mvn -B clean package -DskipTests
 
-      - name: Build Backend
-        run: cd backend && mvn clean package -DskipTests
-
-      - name: Create Release ZIP
+      - name: Create ZIP package with tag name
+        env:
+          TAG_NAME: ${{ needs.tag_build_rc.outputs.new_tag }}
         run: |
           mkdir release
           cp backend/target/*.jar release/
@@ -143,5 +138,5 @@ jobs:
       - name: Upload Release ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.TAG_NAME }}.zip
-          path: ${{ env.TAG_NAME }}.zip
+          name: ${{ needs.tag_build_rc.outputs.new_tag }}.zip
+          path: ${{ needs.tag_build_rc.outputs.new_tag }}.zip
