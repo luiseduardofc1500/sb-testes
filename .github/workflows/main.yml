@@ -199,10 +199,11 @@ jobs:
             echo "::error::Nenhuma tag 'rc-*' encontrada. Impossível criar a tag de release."
             exit 1
           fi
-
           VERSION=$(echo $LATEST_RC_TAG | sed 's/rc-//')
           X=$(echo $VERSION | cut -d. -f1)
-          NEW_TAG="rel-${X}.0"
+          Y=$(echo $VERSION | cut -d. -f2)
+
+          NEW_TAG="rel-${X}.${Y}"
 
           echo "Nova tag de release: $NEW_TAG"
           echo "TAG_NAME=$NEW_TAG" >> $GITHUB_OUTPUT
