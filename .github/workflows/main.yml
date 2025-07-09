@@ -242,7 +242,7 @@ jobs:
           mvn -B clean package -DskipTests
 
       - name: Build image
-        run: docker build -t sistema-bancario-img .
+        run: docker build -t sistema-bancario-img ./backend
 
       - name: Build frontend
         run: |
