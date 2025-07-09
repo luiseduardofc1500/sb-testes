@@ -241,6 +241,9 @@ jobs:
           cd backend
           mvn -B clean package -DskipTests
 
+      - name: Build image
+        run: docker build -t sistema-bancario-img .
+
       - name: Build frontend
         run: |
           npm ci --prefix frontend
