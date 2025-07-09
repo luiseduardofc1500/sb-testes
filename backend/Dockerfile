@@ -2,7 +2,7 @@
 FROM eclipse-temurin:17
 
 #copying .jar file to container
-COPY ./target/sistema-bancario-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY ./target/sistema_bancario-0.0.1-SNAPSHOT.jar /app/app.jar
 
 EXPOSE 8080
 
