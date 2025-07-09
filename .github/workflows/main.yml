@@ -272,3 +272,9 @@ jobs:
         with:
           name: ${{ needs.tag_release_production.outputs.new_tag }}.zip
           path: ${{ needs.tag_release_production.outputs.new_tag }}.zip
+        
+      - name: Push image to Docker Hub
+        run: |
+          docker login -u luiseduardofc1500 -p ${{ secrets.DOCKER_HUB_TOKEN }}
+          docker tag sistema-bancario-img:latest ${{ secrets.DOCKER_HUB_USERNAME }}/sistema-bancario-img:${{ needs.tag_release_production.outputs.new_tag }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/sistema-bancario-img:${{ needs.tag_release_production.outputs.new_tag }}
