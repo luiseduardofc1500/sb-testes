@@ -16,7 +16,7 @@ export default function Home() {
     useState<number>(0);
   const [createAccountMessage, setCreateAccountMessage] = useState<string>("");
   async function handleCreateAccountSubmit(
-    const 
+    const a
     event: React.FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
