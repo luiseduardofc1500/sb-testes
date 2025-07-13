@@ -13,6 +13,8 @@ public class ContaBonus  extends Conta{
         this.bonus = 10;
     }
 
+    
+
     public void adicionarPontuacao(int pontosGanhos){
         this.bonus += pontosGanhos;
     }
