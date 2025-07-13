@@ -69,7 +69,8 @@ public class ContaService {
         }
 
         Conta conta = buscarConta(numeroConta);
-        conta.creditar(valor);
+        // Erro de lógica: não modifica o saldo
+        // conta.creditar(valor);
 
         adicionarPontuacaoBonusSeContaBonus(conta, valor, 100);
 
